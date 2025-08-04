@@ -4,7 +4,8 @@ from cors import setup_cors
 from models.models import Item, ModelName, IaModel
 from api.openia import openia_router 
 # from api.chromadb import chromadb_router
-from api.llama import llama_router 
+from api.llama_local import llama_router 
+from api.groq import groq_router
 
 
 app = FastAPI() 
@@ -14,6 +15,7 @@ setup_cors(app)
 app.include_router(openia_router)
 # app.include_router(chromadb_router)
 app.include_router(llama_router)
+app.include_router(groq_router)
 
 @app.get("/")
 def read_root():

@@ -5,9 +5,6 @@ from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import HumanMessage
 from fastapi import APIRouter
 from data.llama import system_prompt
-from config import GROQ_API_KEY, GROQ_MODEL, TEMPERATURE, OPENAI_API_BASE
-from langchain.chat_models import ChatOpenAI
-
 
 class Question():
     prompt: str
@@ -16,14 +13,6 @@ llama_router = APIRouter(prefix="/llama",tags=["LLAMA 3"] )
 
 # 1. Le modèle local
 llm = OllamaLLM(model="mistral", temperature=0.7)
-
-# Configuration pour Groq
-llm = ChatOpenAI(
-    openai_api_key=GROQ_API_KEY,
-    openai_api_base=OPENAI_API_BASE,  # important
-    model=GROQ_MODEL,
-    temperature=TEMPERATURE
-)
 
 # 2. Le prompt structuré pour une conversation
 prompt = ChatPromptTemplate.from_messages([
