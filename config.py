@@ -16,3 +16,6 @@ TEMPERATURE = 0.7
 
 GROQ_API_BASE = "https://api.groq.com/openai/v1"  # Spécifique à Groq
 GROQ_MODEL = "llama3-70b-8192"
+
+
+MONGO_URI = os.getenv("MONGO_URI")

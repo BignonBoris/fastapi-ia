@@ -19,3 +19,14 @@ class IaModel(BaseModel):
     role: Literal["assistant", "user","system"] = "user"
     content: str
     style: Literal["formel", "simple","neutre"] = "neutre"
+
+
+class ChatInput(BaseModel):
+    message: str
+
+
+class UserInput(BaseModel):
+    name: str
+    age: int
+    sexe: str
+    country: str
