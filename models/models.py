@@ -29,4 +29,4 @@ class UserInput(BaseModel):
     name: str
     age: int
     sexe: str
-    country: str
+    # country: str

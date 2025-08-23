@@ -23,14 +23,14 @@ chat_history = [ ]
 async def getInitPrompt (user_id: str):
     userItem = await db.users.find_one({"user_id" : user_id})
 
-    system_prompt = build_system_prompt(SimpleNamespace(**{ "name" : "", "age" : "", "sexe" : "", "country" : "", })) 
+    system_prompt = build_system_prompt(SimpleNamespace(**{ "name" : "", "age" : "", "sexe" : "", })) 
 
     if userItem:
         system_prompt = build_system_prompt(SimpleNamespace(**{
             "name" : userItem.get("name"),
             "age" : userItem.get("age"),
             "sexe" : userItem.get("sexe"),
-            "country" : userItem.get("country"),
+            # "country" : userItem.get("country"),
         })) 
     
     return system_prompt  
@@ -61,7 +61,7 @@ async def save_user(data : UserInput):
         "name" : data.name, 
         "age" : data.age,
         "sexe" : data.sexe,
-        "country" : data.country,
+        # "country" : data.country,
     })
 
     return unique_code
@@ -122,14 +122,13 @@ async def overview(user_id: str):
     print(conversationItem)
     if conversationItem:
         chat_history = conversationItem.get("messages")
-        chat_history.append({"role": "user", "content": """continue la conversation avec une autre question"""})
+        # chat_history.append({"role": "user", "content": """continue la conversation avec une autre question"""})
     else:
         chat_history = [{"role": "assistant", "content": await getInitPrompt(user_id) }]
         chat_history.append({"role": "user", "content": """ 
                 Salut moi,  parle moi de toi en maximum 30 mots et pose moi une question pour commencer
-            """})
-    
-    await groq_answer(user_id)
+            """}) 
+        await groq_answer(user_id)
 
     return chat_history[2:]
      
@@ -145,6 +144,23 @@ async def test(user_id: str , input: ChatInput):
     # chat_history.append({"role": "assistant", "content": assistant_reply})
 
     return assistant_reply
+
+@groq_router.get("/test/reload/{user_id}")
+async def reloadAnswer(user_id: str): 
+
+    global chat_history
+    conversationItem = await db.projets.find_one({"user_id" : user_id})
+    
+    print(conversationItem)
+    if conversationItem:
+        chat_history = conversationItem.get("messages")
+        # on filtre les messages envoyés par l’assistant
+        assistant_messages = [msg for msg in chat_history if msg["role"] == "assistant"]
+        # si au moins un message trouvé, on prend le dernier
+        return assistant_messages[-1]["content"] if assistant_messages else None
+    else:
+        return None 
+    
 
 @groq_router.get("/sagesse/{user_id}")
 async def getSagesse(user_id: str):
