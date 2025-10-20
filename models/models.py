@@ -30,3 +30,27 @@ class UserInput(BaseModel):
     age: int
     sexe: str
     # country: str
+
+
+class MessageInput(BaseModel):
+    messages: dict
+
+
+class MachingInput(BaseModel):
+    message : str
+
+
+class MachingGuestInput(BaseModel):
+    guest_id : str
+    guest_resume : str = ""
+    compatibility_score: int = 0
+    reason : str = ""
+    advice : str = ""
+
+
+class UpdateMachingGuestInput(MachingGuestInput):
+    status : str
+
+class ConnexionMessageInput(BaseModel):
+    user_id : str
+    message : str

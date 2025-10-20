@@ -1,76 +1,72 @@
 from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+import os
 from typing import Union, List
 from cors import setup_cors
+from fastapi_socketio import SocketManager
+# from api.socket_server import  socket_router  # ✅ Import de ton fichier socket
+import socketio
 from models.models import Item, ModelName, IaModel
 from api.openia import openia_router 
 # from api.chromadb import chromadb_router
 from api.llama_local import llama_router 
 from api.groq import groq_router
+from api.matching import matching_router
 
 
 app = FastAPI() 
 
+# CORS pour éviter les erreurs
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # tu peux limiter à localhost
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 setup_cors(app)
+
+sio = SocketManager(app=app, mount_location="/socket.io")
+
 
 app.include_router(openia_router)
 # app.include_router(chromadb_router)
 app.include_router(llama_router)
 app.include_router(groq_router)
+app.include_router(matching_router)
+# app.include_router(socket_router)
+
+
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello World"} 
-
-@app.get("/items/")
-async def read_items(q: Union[List[str], None] = Query(default=None)):
-    query_items = {"q": q}
-    return query_items
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str = None):
-    return {"item_id": item_id, "q": q}
-
-@app.get("/users/me")
-def read_user_me():
-    return {"username": "me"}
-
-@app.get("/users/{username}")
-def read_user(username: str):
-    return {"username": username} 
-
-@app.post("/items/")
-async def create_item(item: Item):
-    item_dict = item.dict()
-    if item.tax is not None:
-        price_with_tax = item.price + item.tax
-        item_dict.update({"price_with_tax": price_with_tax})
-    return item_dict
-
-@app.put("/items/{item_id}")
-async def update_item(item_id: int, item: Item):
-    return {"item_id": item_id, **item.dict()}
-
-@app.get("/models/{model_name}")
-def get_model(model_name: ModelName):
-    if model_name is ModelName.alexnet:
-        return {"model_name": model_name, "message": "Deep Learning FTW!"}
-    if model_name.value == "lenet":
-        return {"model_name": model_name, "message": "LeCNN all the images"}
-    return {"model_name": model_name, "message": "Have some residuals"}
-
-@app.get("/files/{file_path:path}")
-def get_file(file_path: str):
-    return {"file_path": file_path} 
-
-@app.get("/users/{user_id}/items/{item_id}")
-def get_user_item(user_id: int, item_id: str, q: str = None, short: bool = False):
-    item = {"item_id": item_id}
-    if q:
-        item.update({"q": q})   
-    if not short:
-        item.update(
-            {"description": "This is an amazing item that has a long description"}
-        )
-    return item
+    file_path = os.path.join("static", "test_socket.html")
+    with open(file_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
 
 
+
+# @app.on_event("startup")
+# async def startup_event():
+#     await sio.connect() # Connexion au serveur Socket.IO
+#     print("Serveur Socket.IO démarré.")
+
+
+@sio.on("connect")
+async def handle_connect(sid, *args, **kwargs):
+    print(f"Client connecté : {sid}")
+    await sio.emit("server_to_client", {"data": "Bienvenue sur le chat !"}, to=sid)
+
+@sio.on("client_to_server")
+async def handle_message(sid, data ):
+    print(f"Message de {sid} : {data }")
+    print(f"Message de {sid} : {data.get('connexion_id')}")
+    # await sio.emit("receive_message", {"msg": data}, broadcast=True)
+    # await sio.emit("server_to_client", {"msg": data}, to=sid )
+    await sio.emit(f"server_to_client_#{data.get('connexion_id')}", {"msg": data.get("message")}, skip_sid=sid)
+
+@sio.on("disconnect")
+async def handle_disconnect(sid):
+    print(f"Client déconnecté : {sid}")

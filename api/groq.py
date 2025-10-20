@@ -1,13 +1,18 @@
-from groq import Groq
-from fastapi import APIRouter
+from groq import Groq, AuthenticationError
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from config import GROQ_API_KEY, GROQ_MODEL, TEMPERATURE, GROQ_API_BASE, MONGO_URI
+from config import GROQ_API_KEY, GROQ_MODEL, TEMPERATURE, MONGO_URI
 from data.llama import build_system_prompt 
+from data.groq import matching_system_prompt
 from models.models import UserInput, ChatInput
 from motor.motor_asyncio import AsyncIOMotorClient
 import json
 import uuid
 from types import SimpleNamespace
+from repositories.users import getUsersRepo, getUserRepo, createUserRepo, updateUserRepo, deleteUserRepo
+from repositories.messages import getMessagesByUserRepo, updateMessagesRepo, createMessagesRepo, deleteMessagesRepo
+from repositories.sagesses import getSagessesRepo, createSagessesRepo, updateSagessesRepo
+from repositories.groq import groqApi
 
 groq_router = APIRouter(prefix="/groq",tags=["groq"] ) 
 
@@ -18,10 +23,11 @@ db = mongoClient.sample_mflix  # Nom de ta base
 
 # Initialiser l’historique de conversation
 chat_history = [ ]
+sagesses_history = []
 
 
-async def getInitPrompt (user_id: str):
-    userItem = await db.users.find_one({"user_id" : user_id})
+async def getInitAssistantPrompt (user_id: str):
+    userItem = await getUserRepo(user_id)
 
     system_prompt = build_system_prompt(SimpleNamespace(**{ "name" : "", "age" : "", "sexe" : "", })) 
 
@@ -36,164 +42,147 @@ async def getInitPrompt (user_id: str):
     return system_prompt  
 
 
+def getInitUserPrompt():
+    return """ 
+                Salut l'utilisateur et parle lui de toi en maximum 30 mots et pose moi une question pour commencer
+            """
 
-async def save_answer(user_id : str):
-    conversationItem = await db.projets.find_one({"user_id" : user_id})
-    # print(conversationItem)
-    if conversationItem :
-        await db.projets.update_one(
-            {"user_id": conversationItem.get("user_id")},              # Filtre
-            {"$set": {"messages": chat_history}}     # Action
-        )
-    else :
-        await db.projets.insert_one({
-            "user_id" : user_id, 
-            "messages" : chat_history
-        })
-
-    # return 'result'
-
-async def save_user(data : UserInput): 
-    unique_code = str(uuid.uuid4())
-    await db.users.insert_one({
-        "user_id" : unique_code,
-        "email" : unique_code, 
-        "name" : data.name, 
-        "age" : data.age,
-        "sexe" : data.sexe,
-        # "country" : data.country,
-    })
-
-    return unique_code
+def getInitUserSagessePrompt(sagesses = []):
+    return f"""En te basant sur nos échanges précédents, et en conservant ton rôle de conseiller matrimonial :
+                Fournis une sagesse pertinente pour aider l'utilisateur à mieux gérer sa situation amoureuse actuelle.
+                Il t'a déjà demandé des sagesses, voici celles que tu as déjà données:
+                {chr(10).join(["- " + s.get("sagesse") for s in sagesses]) if sagesses else "Aucune sagesse pour l'instant"}
+                Ta réponse doit inclure une explication claire et la leçon à retenir.
+                Le tout doit être structuré **exclusivement** au format JSON avec les clés suivantes :
+                {{"sagesse", "explanation", "lesson"}}
+                **Ne retourne que le JSON. Aucun autre texte n'est autorisé.**
+            """
 
 
-async def groq_answer(user_id : str):
-    
-    # Appel à l'API
-    response = groqClient.chat.completions.create(
-        model=GROQ_MODEL,  # ou autre modèle Groq
-        messages=chat_history,
-        temperature=TEMPERATURE,
-    )
-
-    chat_history.append({"role": "assistant", "content": response.choices[0].message.content})
-    
-    if not response.choices[0].message.content:
-        return "no found"
-        # Appel à l'API
-        response = groqClient.chat.completions.create(
-            model=GROQ_MODEL,  # ou autre modèle Groq
-            messages=chat_history,
-            temperature=TEMPERATURE,
-        )
-
-    await save_answer(user_id)
-
-    print(response)
-
-    return response.choices[0].message.content
+@groq_router.get("/users")
+async def getUsers(): 
+    return await getUsersRepo()
 
 
-@groq_router.post("/create_user")
+@groq_router.get("/users/{user_id}")
+async def getUser(user_id: str): 
+    return await getUserRepo(user_id)
+
+
+@groq_router.post("/user")
 async def createUser(input: UserInput):
-    user_id = await save_user(input)
-    return user_id
+    return await createUserRepo(input)
 
-# Ajouter un tableau d'objets
-@groq_router.post("/add_data")
-async def add_data():
-    data = {
-        "nom": "Projet IA",
-        "taches": [
-            {"id": 1, "titre": "Créer API", "fait": False},
-            {"id": 2, "titre": "Déployer sur Render", "fait": True}
-        ]
-    }
-    result = await db.projets.insert_one(data)
-    return {"id_inseré": str(result.inserted_id)}
 
-@groq_router.get("/overview/{user_id}")
-async def overview(user_id: str):
-    # await init_messages(user_id)
+@groq_router.put("/user/{user_id}")
+async def updateUser(user_id: str, input: UserInput):
+    return await updateUserRepo(user_id, input) 
+
+@groq_router.delete("/user/{user_id}")
+async def deleteUser(user_id : str):
+    return await deleteUserRepo(user_id)
+
+
+@groq_router.get("/messages/{user_id}")
+async def getUserMessages(user_id : str):
 
     global chat_history
-    conversationItem = await db.projets.find_one({"user_id" : user_id})
     
-    print(conversationItem)
-    if conversationItem:
-        chat_history = conversationItem.get("messages")
-        # chat_history.append({"role": "user", "content": """continue la conversation avec une autre question"""})
-    else:
-        chat_history = [{"role": "assistant", "content": await getInitPrompt(user_id) }]
-        chat_history.append({"role": "user", "content": """ 
-                Salut moi,  parle moi de toi en maximum 30 mots et pose moi une question pour commencer
-            """}) 
-        await groq_answer(user_id)
-
+    chat_history = await getMessagesByUserRepo(user_id) if not chat_history else chat_history
+    
     return chat_history[2:]
+
+
+@groq_router.get("/messages/init/{user_id}")
+async def initUserMessage(user_id: str):
+    
+    global chat_history
+    
+    chat_history = [{"role": "assistant", "content": await getInitAssistantPrompt(user_id) }]
+    chat_history.append({"role": "user", "content": getInitUserPrompt()}) 
+    response = await groqApi(chat_history)
+    chat_history = response.get("messages") 
+    update_message = await updateMessagesRepo(user_id, {"messages": chat_history})
+    
+    return chat_history[2:]
+
+
+@groq_router.post("/messages/{user_id}")
+async def createMessages(user_id : str):
+    messages = [{"role": "assistant", "content": await getInitAssistantPrompt(user_id) },
+                {"role": "user", "content": getInitUserPrompt()}]
+    return await createMessagesRepo(user_id, {"messages": messages})
+
+
+@groq_router.delete("/messages/{user_id}")
+async def deleteMessages(user_id : str):
+    return await deleteMessagesRepo(user_id)
      
 
-@groq_router.post("/test/{user_id}")
-async def test(user_id: str , input: ChatInput): 
-    # await init_messages(user_id)
+@groq_router.post("/messages/add/{user_id}")
+async def addMessage(user_id: str , input: ChatInput): 
+    
+    global chat_history
     # Ajouter le message utilisateur à l'historique
     chat_history.append({"role": "user", "content": input.message})
+    response = await groqApi(chat_history)
+    await updateMessagesRepo(user_id, {"messages": response.get("messages")})
 
-    # Récupérer et stocker la réponse de l'IA
-    assistant_reply = await groq_answer(user_id)
-    # chat_history.append({"role": "assistant", "content": assistant_reply})
+    return response.get("message")
+    
+#API DE CREATION DE LA TABLE SAGESSE
+@groq_router.post("/sagesses/{user_id}")
+async def createSagesses(user_id : str):
+    return await createSagessesRepo(user_id)
 
-    return assistant_reply
-
-@groq_router.get("/test/reload/{user_id}")
-async def reloadAnswer(user_id: str): 
-
+#API DE CREATION DE LA TABLE SAGESSE SI LA TABLE N'EXISTE PAS ENCORE ET INITIALISER AVEC UNE PREMIERE SAGESSE
+@groq_router.get("/sagesses/init/{user_id}")
+async def initSagesses(user_id : str):
     global chat_history
-    conversationItem = await db.projets.find_one({"user_id" : user_id})
+    sagesses = chat_history.copy()
     
-    print(conversationItem)
-    if conversationItem:
-        chat_history = conversationItem.get("messages")
-        # on filtre les messages envoyés par l’assistant
-        assistant_messages = [msg for msg in chat_history if msg["role"] == "assistant"]
-        # si au moins un message trouvé, on prend le dernier
-        return assistant_messages[-1]["content"] if assistant_messages else None
-    else:
-        return None 
-    
-
-@groq_router.get("/sagesse/{user_id}")
-async def getSagesse(user_id: str):
-    
-    conversationItem = await db.projets.find_one({"user_id" : user_id})
-    historical = []
-    
-    if conversationItem: 
-        historical = conversationItem.get("messages")
-    else:
-        historical = [{"role": "assistant", "content": await getInitPrompt(user_id) }]
-    
-    historical.append({
-        "role": "user",
-        "content" : """En te basant sur nos échanges précédents, et en conservant ton rôle de conseiller matrimonial :
-                        Fournis une sagesse pertinente pour aider à mieux gérer la situation amoureuse actuelle.
-                        Ta réponse doit inclure une explication claire et la leçon à retenir.
-                        Le tout doit être structuré **exclusivement** au format JSON avec les clés suivantes :
-                        {"sagesse", "explanation", "lesson"}
-                        **Ne retourne que le JSON. Aucun autre texte n'est autorisé.**
-                        """
-    })
+    sagesse =  await createSagessesRepo(user_id)
+     
+    sagesses.append({ "role": "user", "content" : getInitUserSagessePrompt([]) })
 
     # Appel à l'API
-    response = groqClient.chat.completions.create(
-        model=GROQ_MODEL,  # ou autre modèle Groq
-        messages=historical,
-        temperature=TEMPERATURE,
-    )
-    response = response.choices[0].message.content
+    response = await groqApi(sagesses)
+
+    response = json.loads(response.get("message"))
+    sagesses_history.append(response)
+
+    updateRep = await updateSagessesRepo(user_id, sagesses_history)
     
-    print(response)
-    return json.loads(response)
+    return response
+
+
+@groq_router.get("/sagesses/{user_id}")
+async def getSagesses(user_id: str):
+    sagesses =  await getSagessesRepo(user_id)
+    return sagesses if not sagesses else sagesses.get("sagesses")[-1]
+
+
+@groq_router.get("/sagesses/new/{user_id}")
+async def getNewSagesse(user_id: str):
+
+    global sagesses_history
+    global chat_history
+    sagesses = chat_history.copy()
+    
+    if not sagesses_history:
+        sagessesList = await getSagessesRepo(user_id)
+        sagesses_history = [] if not sagessesList else sagessesList.get("sagesses")
+        
+    sagesses.append({ "role": "user", "content" : getInitUserSagessePrompt(sagesses_history) })
+
+    # Appel à l'API
+    response = await groqApi(sagesses)
+
+    response = json.loads(response.get("message"))
+    sagesses_history.append(response)
+    updateRep = await updateSagessesRepo(user_id, sagesses_history)
+    
+    return response
 
 
 @groq_router.get("/sms/{user_id}")
@@ -205,7 +194,7 @@ async def getSms(user_id: str):
     if conversationItem: 
         historical = conversationItem.get("messages")
     else:
-        historical = [{"role": "assistant", "content": await getInitPrompt(user_id) }]
+        historical = [{"role": "assistant", "content": await getInitAssistantPrompt(user_id) }]
     
     
     historical.append({
@@ -236,3 +225,24 @@ async def getSms(user_id: str):
     
     print(response)
     return json.loads(response)
+
+@groq_router.get("/matching/{user_id}")
+async def getMatching(user_id: str):
+    conversationItem = await db.projets.find_one({"user_id" : user_id})
+    userMessages = conversationItem.get("messages") if conversationItem else "" 
+    projects = await db.projets.find({}, {"_id": 0}).sort("_id", -1).limit(5).to_list(length=None)
+    resultat = []
+    for project in projects:
+        # print(project.get('messages')[2:])
+        response = groqClient.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": matching_system_prompt},
+                {"role": "user", "content": f"Historique utilisateur A : {userMessages[2:] }"},
+                {"role": "user", "content": f"Historique utilisateur B : {project.get('messages')[2:] }"}
+            ]
+        )
+        return json.loads(response.choices[0].message.content)
+        resultat.append(json.loads(response.choices[0].message.content))
+        
+    return resultat

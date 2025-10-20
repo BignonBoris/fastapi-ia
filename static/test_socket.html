@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test SocketIO</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>Test SocketIO</h1>
+    <input id="msg" placeholder="Tape ton message" />
+    <button onclick="sendMessage()">Envoyer</button>
+    <ul id="messages"></ul>
+
+    <script>
+      // connecte au backend FastAPI
+      const socket = io("http://127.0.0.1:8000", {
+        transports: ["websocket"], // force le vrai WebSocket (évite le polling)
+      });
+
+      socket.on("connect", () => {
+        console.log("✅ Connecté au serveur !");
+      }); 
+
+      socket.on("server_to_client_#10", (data) => {
+        console.log({data})
+        const li = document.createElement("li");
+        li.textContent = data.msg;
+        document.getElementById("messages").appendChild(li);
+      });
+
+      function sendMessage() {
+        const input = document.getElementById("msg");
+        socket.emit("client_to_server", input.value);
+        input.value = "";
+      }
+    </script>
+  </body>
+</html>
