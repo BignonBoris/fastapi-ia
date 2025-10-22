@@ -8,7 +8,7 @@ import json
 from types import SimpleNamespace
 from repositories.groq import groqApi
 from models.models import MachingInput, MachingGuestInput, UpdateMachingGuestInput, ConnexionMessageInput
-from repositories.matching import (createMatchingRepo, getMatchingByUserRepo, updateMatchingRepo, 
+from repositories.matching import (createMatchingRepo, getMatchingByUserRepo, updateMatchingRepo,
                                    getUsersWithHighScore, 
                                    createGuestInvitationRepo, getMatchingInvitationRepo, updateGuestInvitationRepo, getInvitationsRepo,
                                    createConnexionRepo, getAllUserConnexionsRepo, getConnexionRepo, updateConnexionRepo )
@@ -56,6 +56,18 @@ async def getMatchingNextQuestion(response):
         data = []
 
     return data
+
+
+@matching_router.get("/{user_id}")
+async def getMatching(user_id: str):
+    matching = await getMatchingByUserRepo(user_id)
+    return matching
+
+    
+@matching_router.get("/messages/{user_id}")
+async def getAllMatchingMessage(user_id: str):
+    matching = await getMatchingByUserRepo(user_id)
+    return matching["messages"] if matching else []
 
 
 
@@ -108,6 +120,16 @@ async def test(user_id : str, data : MachingInput):
         savedata.append(assistance)
         await updateMatchingRepo(user_id, messages = savedata, score = dataIA['score'], resume = dataIA['resume'])
     return messageIA
+
+
+
+@matching_router.get("/messages/{user_id}")
+async def getAllMatchingMessages(user_id: str): 
+    messages = await getInvitationsRepo(user_id)
+
+    return messages
+    return []
+
 
 
 @matching_router.get("/search/{user_id}")

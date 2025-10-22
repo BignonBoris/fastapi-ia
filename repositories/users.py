@@ -27,7 +27,19 @@ async def createUserRepo(data : UserInput):
 async def updateUserRepo(user_id: str, data: UserInput):
     await DB.users.update_one(
             {"user_id": user_id},              # Filtre
-            {"$set": {"name": data.name,  "age" : data.age, "sexe" : data.sexe,} }     # Action
+            {"$set": {
+                "pseudo": data.pseudo,
+                "country": data.country,
+                "phone": data.phone,
+                "dateOfBirth": data.dateOfBirth,
+                "sexe": data.sexe,  
+                "occupation" : data.occupation, 
+                "email" : data.email if data.email else user_id,
+                "password" : data.password,
+                "name" : data.name,
+                "age" : data.age,
+                } 
+            }     # Action
         )
     
     return user_id

@@ -26,10 +26,17 @@ class ChatInput(BaseModel):
 
 
 class UserInput(BaseModel):
-    name: str
-    age: int
-    sexe: str
-    # country: str
+    image: str = ""
+    pseudo: str = ""
+    country: str = ""
+    phone: str = ""
+    dateOfBirth: str = ""
+    sexe: str = ""
+    occupation: str = ""
+    email: str = ""
+    password: str = ""
+    name: str = ""
+    age: int = 0
 
 
 class MessageInput(BaseModel):
