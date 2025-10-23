@@ -67,7 +67,7 @@ async def handle_message(sid, data ):
     print(f"Message de {sid} : {data.get('connexion_id')}")
     # await sio.emit("receive_message", {"msg": data}, broadcast=True)
     # await sio.emit("server_to_client", {"msg": data}, to=sid )
-    await sio.emit(f"server_to_client_#{data.get('connexion_id')}", {"msg": data.get("message")}, skip_sid=sid)
+    await sio.emit(f"server_to_client_#{data.get('connexion_id')}", {"user_id": data.get("user_id"), "message": data.get("message")}, skip_sid=sid)
 
 @sio.on("disconnect")
 async def handle_disconnect(sid):
