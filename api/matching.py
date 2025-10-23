@@ -8,7 +8,7 @@ import json
 from types import SimpleNamespace
 from repositories.groq import groqApi
 from models.models import MachingInput, MachingGuestInput, UpdateMachingGuestInput, ConnexionMessageInput
-from repositories.matching import (createMatchingRepo, getMatchingByUserRepo, updateMatchingRepo,
+from repositories.matching import (createMatchingRepo, getMatchingByUserRepo, getMatchingRepo, updateMatchingRepo,
                                    getUsersWithHighScore, 
                                    createGuestInvitationRepo, getMatchingInvitationRepo, updateGuestInvitationRepo, getInvitationsRepo,
                                    createConnexionRepo, getAllUserConnexionsRepo, getConnexionRepo, updateConnexionRepo )
@@ -60,13 +60,13 @@ async def getMatchingNextQuestion(response):
 
 @matching_router.get("/{matching_id}")
 async def getMatching(matching_id: str):
-    matching = await getMatchingByUserRepo(matching_id)
+    matching = await getMatchingRepo(matching_id)
     return matching
 
     
 @matching_router.get("/messages/{matching_id}")
 async def getAllMatchingMessage(matching_id: str):
-    matching = await getMatchingByUserRepo(matching_id)
+    matching = await getMatchingRepo(matching_id)
     return matching["messages"] if matching else []
 
 
