@@ -58,15 +58,15 @@ async def getMatchingNextQuestion(response):
     return data
 
 
-@matching_router.get("/{user_id}")
-async def getMatching(user_id: str):
-    matching = await getMatchingByUserRepo(user_id)
+@matching_router.get("/{matching_id}")
+async def getMatching(matching_id: str):
+    matching = await getMatchingByUserRepo(matching_id)
     return matching
 
     
-@matching_router.get("/messages/{user_id}")
-async def getAllMatchingMessage(user_id: str):
-    matching = await getMatchingByUserRepo(user_id)
+@matching_router.get("/messages/{matching_id}")
+async def getAllMatchingMessage(matching_id: str):
+    matching = await getMatchingByUserRepo(matching_id)
     return matching["messages"] if matching else []
 
 

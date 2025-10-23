@@ -6,8 +6,8 @@ from repositories.users import getUserRepo
 
 IN_PROGRESS = "IN_PROGRESS"
 
-async def getMatchingByUserRepo(user_id : str):
-    matching = await DB.matching.find_one({"user_id" : user_id}, {"_id": 0})
+async def getMatchingByUserRepo(matching_id : str):
+    matching = await DB.matching.find_one({"matching_id" : matching_id}, {"_id": 0})
     return matching
     return "" if not matching else matching.get("matching_id")
 

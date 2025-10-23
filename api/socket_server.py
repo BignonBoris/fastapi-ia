@@ -5,9 +5,6 @@ import socketio
 
 socket_router = APIRouter(prefix="/socket",tags=["socket"] )  
  
-from fastapi_socketio import SocketManager
-
-app = FastAPI()
 sio = SocketManager(app=app)
 
 @app.on_event("startup")
