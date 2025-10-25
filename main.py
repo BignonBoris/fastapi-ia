@@ -14,6 +14,7 @@ from api.llama_local import llama_router
 from api.groq import groq_router
 from api.matching import matching_router
 from api.user import user_router
+from api.notification import notification_router
 
 
 app = FastAPI() 
@@ -38,6 +39,7 @@ app.include_router(llama_router)
 app.include_router(groq_router)
 app.include_router(matching_router)
 app.include_router(user_router)
+app.include_router(notification_router)
 # app.include_router(socket_router)
 
 

@@ -1,11 +1,6 @@
-from fastapi import APIRouter
-from config import MONGO_URI
-from data.matching import prompt_matching, build_matching_prompt
-from models.models import UserInput, ChatInput 
-import json
-from repositories.groq import groqApi
-from models.models import MachingInput, MachingGuestInput, UpdateMachingGuestInput, ConnexionMessageInput
-from repositories.users import getUserRepo, updateUserRepo
+from fastapi import APIRouter  
+from models.models import UserInput
+from repositories.users import updateUserRepo
 
 user_router = APIRouter(prefix="/user",tags=["user"] )  
   

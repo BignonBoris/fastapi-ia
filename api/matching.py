@@ -64,9 +64,9 @@ async def getMatching(matching_id: str):
     return matching
 
     
-@matching_router.get("/messages/{matching_id}")
-async def getAllMatchingMessage(matching_id: str):
-    matching = await getMatchingRepo(matching_id)
+@matching_router.get("/messages/{user_id}")
+async def getAllMatchingMessage(user_id: str):
+    matching = await getMatchingByUserRepo(user_id)
     return matching["messages"] if matching else []
 
 
