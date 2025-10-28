@@ -23,8 +23,10 @@ async def createMatchingRepo(user_id : str, messages = []):
     await DB.matching.insert_one({
         "matching_id" : unique_code,
         "user_id" : user_id,
-        "name" : user.get("name"),
         "age" : user.get("age"),
+        "name" : user.get("pseudo"),
+        "dateOfBirth" : user.get("dateOfBirth"),
+        "country" : user.get("country"),
         "sexe" : user.get("sexe"),
         "messages" : messages,
         "score" : 0,

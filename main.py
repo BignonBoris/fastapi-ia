@@ -15,7 +15,7 @@ from api.groq import groq_router
 from api.matching import matching_router
 from api.user import user_router
 from api.notification import notification_router
-
+from api.notification import sendNotificationService
 
 app = FastAPI() 
 
@@ -70,6 +70,7 @@ async def handle_message(sid, data ):
     # await sio.emit("receive_message", {"msg": data}, broadcast=True)
     # await sio.emit("server_to_client", {"msg": data}, to=sid )
     await sio.emit(f"server_to_client_#{data.get('connexion_id')}", {"user_id": data.get("user_id"), "message": data.get("message")}, skip_sid=sid)
+    await sendNotificationService(data)
 
 @sio.on("disconnect")
 async def handle_disconnect(sid):

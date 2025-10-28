@@ -19,25 +19,28 @@ async def createUserRepo(data : UserInput):
         "name" : data.name, 
         "age" : data.age,
         "sexe" : data.sexe,
+        "fcmToken" : data.fcmToken,
         # "country" : data.country,
     })
 
     return unique_code
 
 async def updateUserRepo(user_id: str, data: UserInput):
+    user = await getUserRepo(user_id)
     await DB.users.update_one(
             {"user_id": user_id},              # Filtre
             {"$set": {
-                "pseudo": data.pseudo,
-                "country": data.country,
-                "phone": data.phone,
-                "dateOfBirth": data.dateOfBirth,
-                "sexe": data.sexe,  
-                "occupation" : data.occupation, 
-                "email" : data.email if data.email else user_id,
-                "password" : data.password,
-                "name" : data.name,
-                "age" : data.age,
+                "pseudo": data.pseudo if data.pseudo  else user.get("pseudo"),
+                "country": data.country if data.country  else user.get("country"),
+                "phone": data.phone if data.phone  else user.get("phone"),
+                "dateOfBirth": data.dateOfBirth if data.dateOfBirth else user.get("dateOfBirth"),
+                "sexe": data.sexe if data.sexe else user.get("sexe"),  
+                "occupation" : data.occupation if data.occupation else user.get("occupation"), 
+                "email" : data.email if data.email else user.get("email") if user.get("email") else user_id,
+                "password" : data.password if data.password else user.get("password"),
+                "name" : data.name if data.name else user.get("name"),
+                "age" : data.age if data.age else user.get("age"),
+                "fcmToken" : data.fcmToken if data.fcmToken else user.get("fcmToken"),
                 } 
             }     # Action
         )

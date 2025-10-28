@@ -187,6 +187,11 @@ async def updateInvitation(invitation_id : str, data : UpdateMachingGuestInput):
     return response
 
 
+@matching_router.get('/connexion/{connexion_id}')
+async def getConnexion(connexion_id: str ):
+    connexion = await getConnexionRepo(connexion_id)
+    return connexion
+
 
 @matching_router.get('/connexions/{user_id}')
 async def getAllUserConnexions(user_id: str ):

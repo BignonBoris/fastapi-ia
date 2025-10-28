@@ -63,17 +63,6 @@ def getInitUserSagessePrompt(sagesses = []):
 async def getUsers(): 
     return await getUsersRepo()
 
-
-@groq_router.get("/users/{user_id}")
-async def getUser(user_id: str): 
-    return await getUserRepo(user_id)
-
-
-@groq_router.post("/user")
-async def createUser(input: UserInput):
-    return await createUserRepo(input)
-
-
 @groq_router.put("/user/{user_id}")
 async def updateUser(user_id: str, input: UserInput):
     return await updateUserRepo(user_id, input) 

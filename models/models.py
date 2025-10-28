@@ -37,6 +37,7 @@ class UserInput(BaseModel):
     password: str = ""
     name: str = ""
     age: int = 0
+    fcmToken: str = ""
 
 
 class MessageInput(BaseModel):

@@ -5,13 +5,15 @@ import os
 import google.auth.transport.requests
 import google.oauth2.service_account
 import json
+from repositories.matching import getConnexionRepo
+from repositories.users import getUserRepo
 
 notification_router = APIRouter(prefix="/notification",tags=["Notification"] )
 
 # 🔑 Mets ici ta Server Key FCM (depuis Firebase Console → Paramètres du projet → Cloud Messaging)
 FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY", "AAAA9lSs1Gk:APA91bGzOs697Vrc0w8WN8oMXP9j5ymWDKEIb07-UKEnjZ7dyITIsaFLW4PgXC18ZBE8Exz2U65iJ1SfPfxoRCnrV3rt90ghogFP8SMdgbN2gR6usj6tGqzFEM69wTLcjQ8VGc4kLuFV")
 
-SERVICE_ACCOUNT_FILE = "helper-92613-firebase-adminsdk-4psaf-fb6d83bd7f.json"
+SERVICE_ACCOUNT_FILE = "helper-92613-firebase-adminsdk-4psaf-bc9ef16cb1.json"
 
 # 🔑 Scopes pour FCM
 SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
@@ -35,6 +37,7 @@ def get_access_token():
     )
     request = google.auth.transport.requests.Request()
     credentials.refresh(request)
+    print(request)
     return credentials.token
 
 @notification_router.post("/register_device")
@@ -44,7 +47,7 @@ def register_device(device: Device):
     return {"status": "ok", "registered": TOKENS}
 
 
-@notification_router.post("/send_test_notification")
+@notification_router.post("/send")
 async def send_test_notification(req: NotificationRequest):
     access_token = get_access_token()
     project_id = json.load(open(SERVICE_ACCOUNT_FILE))["project_id"]
@@ -77,3 +80,21 @@ async def send_test_notification(req: NotificationRequest):
         return {"success": True, "response": response.json()}
     else:
         raise HTTPException(status_code=response.status_code, detail=response.text)
+
+
+async def sendNotificationService(data):
+    connexion_id = data.get('connexion_id')
+    message = data.get("message")
+    sender_id = data.get("user_id") 
+    connexion = await getConnexionRepo(connexion_id)
+    if connexion: 
+        sender = await getUserRepo(sender_id)
+        receiver = await getUserRepo(connexion.get('user_id') if sender_id != connexion.get('user_id') 
+                                 else connexion.get('guest_id'))
+        if receiver: 
+            if receiver.get('fcmToken') :
+                 await send_test_notification(NotificationRequest(
+                    token=receiver.get('fcmToken'),
+                    title=sender.get('pseudo'),
+                    body=message
+                ))
