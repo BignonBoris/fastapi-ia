@@ -5,7 +5,7 @@ from repositories.users import updateUserRepo, createUserRepo, getUserRepo
 user_router = APIRouter(prefix="/user",tags=["user"] )  
   
 
-@user_router.post("/")
+@user_router.post("")
 async def createUser(input: UserInput):
     return await createUserRepo(input)
     
