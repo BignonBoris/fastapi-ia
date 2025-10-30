@@ -3,17 +3,20 @@ from pydantic import BaseModel
 import requests
 import os
 import google.auth.transport.requests
-import google.oauth2.service_account
+import google.oauth2.service_account as service_account
 import json
 from repositories.matching import getConnexionRepo
 from repositories.users import getUserRepo
+
 
 notification_router = APIRouter(prefix="/notification",tags=["Notification"] )
 
 # 🔑 Mets ici ta Server Key FCM (depuis Firebase Console → Paramètres du projet → Cloud Messaging)
 FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY", "AAAA9lSs1Gk:APA91bGzOs697Vrc0w8WN8oMXP9j5ymWDKEIb07-UKEnjZ7dyITIsaFLW4PgXC18ZBE8Exz2U65iJ1SfPfxoRCnrV3rt90ghogFP8SMdgbN2gR6usj6tGqzFEM69wTLcjQ8VGc4kLuFV")
 
-SERVICE_ACCOUNT_FILE = "helper-92613-firebase-adminsdk-4psaf-bc9ef16cb1.json"
+# SERVICE_ACCOUNT_FILE = "helper-92613-firebase-adminsdk-4psaf-bc9ef16cb1.json"
+SERVICE_ACCOUNT_FILE = "helper-92613-firebase-adminsdk-4psaf-0a2a1895dd.json"
+firebase_credentials = os.getenv("FIREBASE_CREDENTIALS")
 
 # 🔑 Scopes pour FCM
 SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
@@ -32,13 +35,36 @@ class NotificationRequest(BaseModel):
     body: str
 
 def get_access_token():
-    credentials = google.oauth2.service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES
-    )
-    request = google.auth.transport.requests.Request()
-    credentials.refresh(request)
-    print(request)
-    return credentials.token
+
+    if not firebase_credentials:
+        raise ValueError("⚠️ FIREBASE_CREDENTIALS n'est pas défini dans les variables d'environnement.")
+
+    try:
+        # Charger le JSON depuis la variable d'environnement
+        cred_info = json.loads(firebase_credentials)
+
+        # Créer un objet credentials
+        credentials = service_account.Credentials.from_service_account_info(
+            cred_info,
+            scopes=["https://www.googleapis.com/auth/firebase.messaging"]
+        )
+
+        # Rafraîchir et obtenir le token
+        request = google.auth.transport.requests.Request()
+        credentials.refresh(request)
+        return credentials.token
+
+    except Exception as e:
+        raise RuntimeError(f"Erreur lors de la génération du token Firebase : {e}")
+
+
+    # credentials = google.oauth2.service_account.Credentials.from_service_account_file(
+    #     SERVICE_ACCOUNT_FILE, scopes=SCOPES
+    # )
+    # request = google.auth.transport.requests.Request()
+    # credentials.refresh(request)
+    # print(request)
+    # return credentials.token
 
 @notification_router.post("/register_device")
 def register_device(device: Device):
@@ -49,8 +75,10 @@ def register_device(device: Device):
 
 @notification_router.post("/send")
 async def send_test_notification(req: NotificationRequest):
-    access_token = get_access_token()
-    project_id = json.load(open(SERVICE_ACCOUNT_FILE))["project_id"]
+    access_token =  get_access_token()
+    cred_info = json.loads(firebase_credentials)
+    # project_id = json.load(open(SERVICE_ACCOUNT_FILE))["project_id"]
+    project_id = cred_info.get("project_id")
     url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
     print(url) 
     

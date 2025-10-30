@@ -79,15 +79,15 @@ async def getUsersWithHighScore(user_id):
         #         "score_int": {"$toInt": "$score"}
         #     }
         # },
-        {
+        # {
             # # filtre sur les scores supérieurs à 75
             # "$match": {
             #     "score_int": {"$gt": 0}
             # }
-            "$match": {
-                "score": {"$gt": 0}
-            }
-        },
+            # "$match": {
+            #     "score": {"$gt": 0}
+            # }
+        # },
         {
             "$project": {
                 "_id": 0,

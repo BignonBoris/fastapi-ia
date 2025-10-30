@@ -138,9 +138,9 @@ async def getMatching(user_id: str):
     userMatchingItem = await getMatchingByUserRepo(user_id)
     usersFind = []
     if not userMatchingItem:
-        return "ITEM NOT FOUND"
+        print("ITEM NOT FOUND")
     elif not otherUsers:
-        return "USERS NOT FOUND"
+        print("USERS NOT FOUND")
     else:
         for user in otherUsers:
             resume1 = userMatchingItem.get('resume')
