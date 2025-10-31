@@ -62,3 +62,12 @@ class UpdateMachingGuestInput(MachingGuestInput):
 class ConnexionMessageInput(BaseModel):
     user_id : str
     message : str
+
+class AuthInput(BaseModel):
+    email: str = ""
+    password: str = ""
+
+
+class ConexionInput(BaseModel):
+    user_id: str = ""
+    guest_id: str = ""

@@ -7,8 +7,8 @@ async def getUsersRepo():
     return await users.to_list(length=None)
 
 
-async def getUserRepo(user_id : str):
-    return await DB.users.find_one({"user_id" : user_id}, {"_id": 0}) 
+async def getUserRepo(searchValue : str , searchKey : str = "user_id"):
+    return await DB.users.find_one({searchKey : searchValue}, {"_id": 0}) 
 
 
 async def createUserRepo(data : UserInput): 

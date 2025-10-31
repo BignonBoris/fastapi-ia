@@ -96,6 +96,8 @@ async def getUsersWithHighScore(user_id):
                 "name": 1,
                 "age" : 1,
                 "sexe" : 1,
+                "dateOfBirth" : 1,
+                "country" : 1,
                 # "score_int": 1,
                 "resume": 1
             }
@@ -149,10 +151,16 @@ async def getInvitationsRepo(user_id : str):
                 "guest_resume": 1,
                 "reason": 1,
                 "advice": 1,
-                "user_info.name": 1,
-                "user_info.age": 1,
-                "guest_info.name": 1,
-                "guest_info.age": 1
+                "user_info.dateOfBirth": 1,
+                "user_info.pseudo": 1,
+                "user_info.sexe": 1,
+                "user_info.country": 1,
+                "user_info.occupation": 1,
+                "guest_info.dateOfBirth": 1,
+                "guest_info.pseudo": 1,
+                "guest_info.sexe": 1,
+                "guest_info.country": 1,
+                "guest_info.occupation": 1
             }
         }
     ]
@@ -306,9 +314,11 @@ async def getAllUserConnexionsRepo(user_id : str):
                 "user_info.user_id": 1,
                 "user_info.name": 1,
                 "user_info.age": 1,
+                "user_info.pseudo": 1,
                 "guest_info.user_id": 1,
                 "guest_info.name": 1,
-                "guest_info.age": 1
+                "guest_info.age": 1,
+                "guest_info.pseudo": 1
             }
         }
     ]
