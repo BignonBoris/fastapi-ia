@@ -5,6 +5,7 @@ import os
 from typing import Union, List
 from cors import setup_cors
 from fastapi_socketio import SocketManager
+from fastapi.staticfiles import StaticFiles
 # from api.socket_server import  socket_router  # ✅ Import de ton fichier socket
 import socketio
 from models.models import Item, ModelName, IaModel
@@ -19,6 +20,15 @@ from api.auth import auth_router
 from api.connexion import connexion_router
 
 app = FastAPI() 
+
+# Chemin vers le dossier d'upload
+UPLOAD_DIR = "uploads"
+
+# Création du dossier si nécessaire
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# 🔥 Permet d'accéder aux fichiers à l'adresse : http://127.0.0.1:8000/uploads/<filename>
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # CORS pour éviter les erreurs
 app.add_middleware(

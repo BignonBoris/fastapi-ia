@@ -3,6 +3,7 @@ import uuid
 from models.models import MachingInput, ConnexionMessageInput, MachingGuestInput, UpdateMachingGuestInput
 from bson.son import SON
 from repositories.users import getUserRepo
+from datetime import datetime
 
 IN_PROGRESS = "IN_PROGRESS"
 
@@ -47,8 +48,12 @@ async def updateMatchingRepo(user_id : str, messages = [], score = "",resume = "
 
 
 
-async def getUsersWithHighScore(user_id):
-    
+async def getUsersWithHighScore(user_id, page = 1 , limit =10):
+
+    skip = (page - 1) * limit
+    total_users = await DB.matching.count_documents({}) - 1
+    limit = min(limit, total_users)
+     
     # SELECTIONNER LES INVITATIONS ENVOYE OU RECU PAR L'USER
     userInvitations = await DB.invitation.aggregate([{
         "$match": {
@@ -88,6 +93,9 @@ async def getUsersWithHighScore(user_id):
             #     "score": {"$gt": 0}
             # }
         # },
+        {"$sample": {"size": total_users}},   # mélange tout aléatoirement
+        {"$skip": skip},
+        {"$limit": limit},
         {
             "$project": {
                 "_id": 0,
@@ -104,7 +112,14 @@ async def getUsersWithHighScore(user_id):
         }
     ])
 
-    return await cursor.to_list(length=None)
+    return await cursor.to_list(length=limit)
+
+    return {
+        "page" : page,
+        "limit" : limit,
+        "total" : total_users,
+        "data" : users
+    }
 
     
 
@@ -239,7 +254,8 @@ async def createConnexionRepo(invitation_id : str , user_id : str, guest_id : st
         "invitation_id" : invitation_id,
         "user_id" : user_id,
         "guest_id" : guest_id,
-        "messages" : [{"user_id" : "system", "message" : "Nouvelle connexion"}],
+        "messages" : [{"user_id" : "system", "message" : "Nouvelle connexion", "date" : datetime.now().isoformat()}],
+        "updated_at" : datetime.now(),
     })
 
     return unique_code
@@ -260,10 +276,10 @@ async def updateConnexionRepo(connexion_id : str, data : ConnexionMessageInput):
     connexion = await DB.connexion.find_one({"connexion_id" : connexion_id}, {"_id": 0})
     if connexion:
         messages = connexion.get("messages").copy()
-        messages.append({"user_id" : data.user_id, "message" : data.message})
+        messages.append({"user_id" : data.user_id, "message" : data.message, "date" : datetime.now().isoformat()})
         await DB.connexion.update_one(
             {"connexion_id": connexion_id},              # Filtre
-            {"$set": {"messages": messages} }     # Action
+            {"$set": {"messages": messages, "updated_at" : datetime.now(),} }     # Action
         )
 
     return connexion_id
@@ -318,7 +334,13 @@ async def getAllUserConnexionsRepo(user_id : str):
                 "guest_info.user_id": 1,
                 "guest_info.name": 1,
                 "guest_info.age": 1,
-                "guest_info.pseudo": 1
+                "guest_info.pseudo": 1,
+                "updated_at": 1   # 🔥 important : inclure le champ pour pouvoir trier dessus
+            }
+        },
+        {
+            "$sort": {
+                "updated_at": -1   # 🔽 -1 = ordre décroissant (les plus récents d'abord)
             }
         }
     ]

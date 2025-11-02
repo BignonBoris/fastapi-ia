@@ -125,16 +125,13 @@ async def test(user_id : str, data : MachingInput):
 
 @matching_router.get("/messages/{user_id}")
 async def getAllMatchingMessages(user_id: str): 
-    messages = await getInvitationsRepo(user_id)
-
-    return messages
-    return []
+    return await getInvitationsRepo(user_id)
 
 
 
-@matching_router.get("/search/{user_id}")
-async def getMatching(user_id: str): 
-    otherUsers = await getUsersWithHighScore(user_id)
+@matching_router.get("/search/{user_id}/{page}/{limit}")
+async def getMatching(user_id: str, page: int, limit : int): 
+    otherUsers = await getUsersWithHighScore(user_id, page, limit)
     userMatchingItem = await getMatchingByUserRepo(user_id)
     usersFind = []
     if not userMatchingItem:
@@ -143,17 +140,24 @@ async def getMatching(user_id: str):
         print("USERS NOT FOUND")
     else:
         for user in otherUsers:
-            resume1 = userMatchingItem.get('resume')
-            resume2 = user.get('resume')
-            completPrompt = build_matching_prompt(resume1, resume2)
-            response = await groqApi([{"role": "system", "content": completPrompt}])
-            response = response.get("message") 
-            data = json.loads(response)
-            if data:
-                if data["compatibility_score"] and data["compatibility_score"] > 0:
-                    usersFind.append({"user" : user,  "result" : data})
+            usersFind.append({"user" : user,  "result" : {"compatibility_score" : 0, "reason": "", "advice" : ""}})
+            # resume1 = userMatchingItem.get('resume')
+            # resume2 = user.get('resume')
+            # completPrompt = build_matching_prompt(resume1, resume2)
+            # response = await groqApi([{"role": "system", "content": completPrompt}])
+            # response = response.get("message") 
+            # data = json.loads(response)
+            # if data:
+            #     if data["compatibility_score"] and data["compatibility_score"] > 0:
+                    # usersFind.append({"user" : user,  "result" : data})
 
     return usersFind
+    # return {
+    #     "page" : page,
+    #     "limit" : limit,
+    #     # "total" : total_users,
+    #     "data" : usersFind
+    # }
 
 
 
