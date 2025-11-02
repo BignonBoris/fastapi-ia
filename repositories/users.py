@@ -22,7 +22,8 @@ async def createUserRepo(data : UserInput):
         "age" : data.age,
         "sexe" : data.sexe,
         "fcmToken" : data.fcmToken,
-        # "country" : data.country,
+        "imageProfile" : data.imageProfile,
+        "country" : data.country,
     })
 
     return unique_code
@@ -43,6 +44,7 @@ async def updateUserRepo(user_id: str, data: UserInput):
                 "name" : data.name if data.name else user.get("name"),
                 "age" : data.age if data.age else user.get("age"),
                 "fcmToken" : data.fcmToken if data.fcmToken else user.get("fcmToken"),
+                "imageProfile" : data.imageProfile if data.imageProfile else user.get("imageProfile"),
                 } 
             }     # Action
         )

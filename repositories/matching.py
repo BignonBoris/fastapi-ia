@@ -171,11 +171,13 @@ async def getInvitationsRepo(user_id : str):
                 "user_info.sexe": 1,
                 "user_info.country": 1,
                 "user_info.occupation": 1,
+                "user_info.imageProfile":1,
                 "guest_info.dateOfBirth": 1,
                 "guest_info.pseudo": 1,
                 "guest_info.sexe": 1,
                 "guest_info.country": 1,
-                "guest_info.occupation": 1
+                "guest_info.occupation": 1,
+                "guest_info.imageProfile":1,
             }
         }
     ]
@@ -331,10 +333,12 @@ async def getAllUserConnexionsRepo(user_id : str):
                 "user_info.name": 1,
                 "user_info.age": 1,
                 "user_info.pseudo": 1,
+                "user_info.imageProfile": 1,
                 "guest_info.user_id": 1,
                 "guest_info.name": 1,
                 "guest_info.age": 1,
                 "guest_info.pseudo": 1,
+                "guest_info.imageProfile": 1,
                 "updated_at": 1   # 🔥 important : inclure le champ pour pouvoir trier dessus
             }
         },

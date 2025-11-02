@@ -42,11 +42,7 @@ async def upload_profile_image(user_id: str, file: UploadFile = File(...)):
 
     image_url = f"/{file_path}"  # ou une URL Cloud
 
-    # # Mets à jour l'utilisateur dans MongoDB
-    # users.update_one(
-    #     {"user_id": user_id},
-    #     {"$set": {"image": image_url}}
-    # )
+    update_id = await updateUserRepo(user_id, UserInput(imageProfile = public_url))
 
     return {"path" : image_url, "url" : public_url}
 
