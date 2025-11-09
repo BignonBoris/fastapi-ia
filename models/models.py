@@ -38,7 +38,7 @@ class UserInput(BaseModel):
     name: str = ""
     age: int = 0
     fcmToken: str = ""
-    imageProfile: str = ""
+    profileImagePath: str = ""
 
 
 class MessageInput(BaseModel):

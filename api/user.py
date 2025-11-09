@@ -8,8 +8,8 @@ import os
 
 user_router = APIRouter(prefix="/user",tags=["user"] )
 
-baseUrl = "https://fastapi-ia-74eo.onrender.com"
-# baseUrl = "http://127.0.0.1:8000"
+# baseUrl = "https://fastapi-ia-74eo.onrender.com"
+baseUrl = "http://127.0.0.1:8000"
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)  
@@ -42,7 +42,7 @@ async def upload_profile_image(user_id: str, file: UploadFile = File(...)):
 
     image_url = f"/{file_path}"  # ou une URL Cloud
 
-    update_id = await updateUserRepo(user_id, UserInput(imageProfile = public_url))
+    update_id = await updateUserRepo(user_id, UserInput(profileImagePath = public_url))
 
     return {"path" : image_url, "url" : public_url}
 

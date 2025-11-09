@@ -93,6 +93,14 @@ async def getUsersWithHighScore(user_id, page = 1 , limit =10):
             #     "score": {"$gt": 0}
             # }
         # },
+        {
+            "$lookup": {
+                "from": "users",          # nom de la collection users
+                "localField": "user_id",  # champ dans la collection invitation
+                "foreignField": "user_id",# champ correspondant dans users
+                "as": "user_info"         # nom du champ résultant
+            }
+        },
         {"$sample": {"size": total_users}},   # mélange tout aléatoirement
         {"$skip": skip},
         {"$limit": limit},
@@ -107,7 +115,14 @@ async def getUsersWithHighScore(user_id, page = 1 , limit =10):
                 "dateOfBirth" : 1,
                 "country" : 1,
                 # "score_int": 1,
-                "resume": 1
+                "resume": 1,
+                "user_info.dateOfBirth": 1,
+                "user_info.pseudo": 1,
+                "user_info.sexe": 1,
+                "user_info.country": 1,
+                "user_info.occupation": 1,
+                "user_info.profileImagePath":1,
+                "user_info.imageProfile":1,
             }
         }
     ])
@@ -171,12 +186,14 @@ async def getInvitationsRepo(user_id : str):
                 "user_info.sexe": 1,
                 "user_info.country": 1,
                 "user_info.occupation": 1,
+                "user_info.profileImagePath":1,
                 "user_info.imageProfile":1,
                 "guest_info.dateOfBirth": 1,
                 "guest_info.pseudo": 1,
                 "guest_info.sexe": 1,
                 "guest_info.country": 1,
                 "guest_info.occupation": 1,
+                "guest_info.profileImagePath":1,
                 "guest_info.imageProfile":1,
             }
         }
@@ -250,15 +267,28 @@ async def updateGuestInvitationRepo(invitation_id : str , data: UpdateMachingGue
 
 
 async def createConnexionRepo(invitation_id : str , user_id : str, guest_id : str):
-    unique_code = str(uuid.uuid4())
-    await DB.connexion.insert_one({
-        "connexion_id" : unique_code,
-        "invitation_id" : invitation_id,
-        "user_id" : user_id,
-        "guest_id" : guest_id,
-        "messages" : [{"user_id" : "system", "message" : "Nouvelle connexion", "date" : datetime.now().isoformat()}],
-        "updated_at" : datetime.now(),
-    })
+    connexion = await DB.connexion.find_one(
+        {
+            "$or": [
+                {"user_id": user_id, "guest_id": guest_id},
+                {"user_id": guest_id, "guest_id": user_id}
+            ]
+        },
+        {"_id": 0}
+    )
+
+    if connexion:
+        unique_code = connexion.get("connexion_id")
+    else:  
+        unique_code = str(uuid.uuid4())
+        await DB.connexion.insert_one({
+            "connexion_id" : unique_code,
+            "invitation_id" : invitation_id,
+            "user_id" : user_id,
+            "guest_id" : guest_id,
+            "messages" : [{"user_id" : "system", "message" : "Nouvelle connexion", "date" : datetime.now().isoformat()}],
+            "updated_at" : datetime.now(),
+        })
 
     return unique_code
 
@@ -333,11 +363,13 @@ async def getAllUserConnexionsRepo(user_id : str):
                 "user_info.name": 1,
                 "user_info.age": 1,
                 "user_info.pseudo": 1,
-                "user_info.imageProfile": 1,
+                "user_info.profileImagePath": 1,
+                "user_info.imageProfiles": 1,
                 "guest_info.user_id": 1,
                 "guest_info.name": 1,
                 "guest_info.age": 1,
                 "guest_info.pseudo": 1,
+                "guest_info.profileImagePath": 1,
                 "guest_info.imageProfile": 1,
                 "updated_at": 1   # 🔥 important : inclure le champ pour pouvoir trier dessus
             }
