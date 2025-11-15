@@ -8,8 +8,8 @@ import os
 
 user_router = APIRouter(prefix="/user",tags=["user"] )
 
-# baseUrl = "https://fastapi-ia-74eo.onrender.com"
-baseUrl = "http://127.0.0.1:8000"
+baseUrl = "https://fastapi-ia-74eo.onrender.com"
+# baseUrl = "http://127.0.0.1:8000"
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)  

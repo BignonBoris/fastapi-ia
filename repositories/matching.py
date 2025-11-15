@@ -308,7 +308,7 @@ async def updateConnexionRepo(connexion_id : str, data : ConnexionMessageInput):
     connexion = await DB.connexion.find_one({"connexion_id" : connexion_id}, {"_id": 0})
     if connexion:
         messages = connexion.get("messages").copy()
-        messages.append({"user_id" : data.user_id, "message" : data.message, "date" : datetime.now().isoformat()})
+        messages.append({"user_id" : data.user_id, "message" : data.message, "type" : data.type if data.type else "TEXT", "date" : datetime.now().isoformat()})
         await DB.connexion.update_one(
             {"connexion_id": connexion_id},              # Filtre
             {"$set": {"messages": messages, "updated_at" : datetime.now(),} }     # Action

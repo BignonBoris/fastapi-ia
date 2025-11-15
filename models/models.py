@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from enum import Enum
 from typing import Union, Literal
-
+from fastapi import UploadFile, File
 
 class ModelName(str, Enum):
     alexnet = "alexnet"
@@ -63,12 +63,13 @@ class UpdateMachingGuestInput(MachingGuestInput):
 class ConnexionMessageInput(BaseModel):
     user_id : str
     message : str
+    type: str = "TEXT"
 
 class AuthInput(BaseModel):
     email: str = ""
     password: str = ""
 
 
-class ConexionInput(BaseModel):
+class ConnexionInput(BaseModel):
     user_id: str = ""
     guest_id: str = ""

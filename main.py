@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import asyncio
 import requests, time
 from typing import Union, List
 from cors import setup_cors
@@ -58,20 +59,27 @@ app.include_router(auth_router)
 app.include_router(connexion_router)
 # app.include_router(socket_router)
 
+async def keep_alive():
+    while True:
+        try:
+            r = requests.get("https://fastapi-ia-74eo.onrender.com/", timeout=10)
+            print("Ping réussi ✅", r.status_code)
+        except Exception as e:
+            print("Erreur ping ❌", e)
+
+        await asyncio.sleep(600)  # toutes les 10 minutes
+
+
+@app.on_event("startup")
+async def start_tasks():
+    asyncio.create_task(keep_alive())
 
 
 @app.get("/")
 def read_root():
     file_path = os.path.join("static", "test_socket.html")
-    while True:
-        try:
-            r = requests.get("https://fastapi-ia-74eo.onrender.com/", timeout=10)
-            print("Ping réussi ✅", r.status_code)
-            with open(file_path, "r", encoding="utf-8") as f:
-                return HTMLResponse(f.read())
-        except Exception as e:
-            print("Erreur de ping ❌", e)
-        time.sleep(600)  # toutes les 10 minutes
+    with open(file_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
 
 
 
