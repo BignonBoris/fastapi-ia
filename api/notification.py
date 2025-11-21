@@ -110,6 +110,102 @@ async def send_test_notification(req: NotificationRequest):
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
 
+
+@notification_router.post("/send-call-notif")
+async def send_call_notif(receiver_id: str, sender_id: str , connexion_id : str):
+    
+    access_token =  get_access_token()
+    cred_info = json.loads(firebase_credentials)
+    # project_id = json.load(open(SERVICE_ACCOUNT_FILE))["project_id"]
+    project_id = cred_info.get("project_id")
+    url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
+
+
+    # Récupérer token FCM du receiver dans ta base
+    connexion = await getConnexionRepo(connexion_id)
+    sender = await getUserRepo(sender_id)
+    receiver = await getUserRepo(receiver_id)
+    # receiver = await getUserRepo(connexion.get('user_id') if sender_id != connexion.get('user_id') 
+    #                              else connexion.get('guest_id'))
+    
+    token = receiver.get("fcmToken")
+    caller_name = sender.get("pseudo")
+    call_id = sender.get("user_id")
+    
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json; UTF-8"
+    }
+
+    message = {
+        "message": {
+            "token": token,
+            "notification": {
+                "title": "Appel entrant",
+                "body": f"{caller_name} vous appelle",
+                # "sound": "default",
+            },
+            "android": {
+            "priority": "high",
+            "notification": {
+                    "sound": "default",
+                    "channel_id": "incoming_calls",
+                    "click_action": "FLUTTER_NOTIFICATION_CLICK"
+                }
+            },
+            "apns": {
+                "payload": {
+                    "aps": {
+                        "alert": {
+                            "title": "Appel entrant",
+                            "body": "John vous appelle"
+                        },
+                        "sound": "default",
+                        "content-available": 1
+                    }
+                }
+            },
+            "data": {
+                # "screen": "incoming_call",
+                # "foo": "bar"
+                
+                "screen": "incoming_call",
+                "call_id": call_id,
+                "caller_name": caller_name,
+                "action": "OPEN_CALL_SCREEN"
+            }
+        }
+    }
+
+    # payload = {
+    #     "to": token,
+    #     "notification": {
+    #         "title": "Appel entrant",
+    #         "body": f"{caller_name} vous appelle",
+    #         "sound": "default",
+    #     },
+    #     "data": {
+    #         "screen": "incoming_call",
+    #         "call_id": call_id,
+    #         "caller_name": caller_name
+    #     }
+    # }
+
+    r = requests.post(
+        # "https://fcm.googleapis.com/fcm/send",
+        url,
+        headers=headers,
+        json=message
+    )
+    print(r.status_code)
+    print(r.text)
+    return r.status_code
+
+    return {"status": "sent", "fcm_response": r.json()}
+
+
+
+
 async def sendNotificationService(data):
     connexion_id = data.get('connexion_id')
     message = data.get("message")

@@ -23,6 +23,10 @@ async def scanner(input: ConnexionInput):
 async def upload_image(connexion_id: str,  user_id : str, file : UploadFile = File()):
     # Crée un nom de fichier unique
 
+    print(connexion_id)
+    print(user_id)
+    print(file)
+
     file_extension = os.path.splitext(file.filename)[1]
     filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, filename)
