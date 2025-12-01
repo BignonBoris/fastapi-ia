@@ -5,6 +5,9 @@ from bson.son import SON
 from repositories.users import getUserRepo
 from datetime import datetime
 
+
+# CURRENT_DATE = datetime.now().isoformat()
+CURRENT_DATE = datetime.now()
 IN_PROGRESS = "IN_PROGRESS"
 
 
@@ -286,8 +289,12 @@ async def createConnexionRepo(invitation_id : str , user_id : str, guest_id : st
             "invitation_id" : invitation_id,
             "user_id" : user_id,
             "guest_id" : guest_id,
-            "messages" : [{"user_id" : "system", "message" : "Nouvelle connexion", "date" : datetime.now().isoformat()}],
-            "updated_at" : datetime.now(),
+            "messages" : [{"user_id" : "system", "message" : "Nouvelle connexion", "date" : CURRENT_DATE}],
+            "user_last_date" : CURRENT_DATE,
+            "guest_last_date" : CURRENT_DATE,
+            "user_unread_message" : 0,
+            "guest_unread_message" : 0,
+            "updated_at" : CURRENT_DATE,
         })
 
     return unique_code
@@ -306,12 +313,23 @@ async def getConnexionRepo(connexion_id):
 # c'est la requete utilisée principalement pour ajouter un message dans la conversation entre 2 personnes
 async def updateConnexionRepo(connexion_id : str, data : ConnexionMessageInput):
     connexion = await DB.connexion.find_one({"connexion_id" : connexion_id}, {"_id": 0})
+    isUser = lambda : connexion.get("user_id") == data.user_id
     if connexion:
         messages = connexion.get("messages").copy()
-        messages.append({"user_id" : data.user_id, "message" : data.message, "type" : data.type if data.type else "TEXT", "date" : datetime.now().isoformat()})
+        messages.append({"user_id" : data.user_id, "message" : data.message, "type" : data.type if data.type else "TEXT", "date" : CURRENT_DATE})
         await DB.connexion.update_one(
             {"connexion_id": connexion_id},              # Filtre
-            {"$set": {"messages": messages, "updated_at" : datetime.now(),} }     # Action
+            {"$set": {
+                "messages": messages, 
+                "updated_at" : CURRENT_DATE,
+                "user_last_date" : CURRENT_DATE if (isUser()) else connexion.get("user_last_date") if connexion.get("user_last_date") else CURRENT_DATE,
+                "guest_last_date" : CURRENT_DATE if (not isUser()) else connexion.get("guest_last_date") if connexion.get("guest_last_date") else CURRENT_DATE,
+                "user_is_conntect": True if (isUser()) else connexion.get("user_is_conntect") if connexion.get("user_is_conntect") else False,
+                "guest_is_connect": True if (not isUser()) else connexion.get("guest_is_connect") if connexion.get("guest_is_connect") else False,
+                # ICI JE VERIFIE SI LE GUEST ENVOIE LE MESSAGE ET LE USER N'EST PAS CONNECTER DE COMPTER LE NOMBRE DE MESSAGE SINON DE METTRE 0
+                "user_unread_message" : connexion.get("user_unread_message") + 1 if (not isUser() and not connexion.get("user_is_conntect")) else 0,
+                "guest_unread_message" : connexion.get("guest_unread_message") + 1 if (isUser() and not connexion.get("guest_is_connect")) else 0,
+            } }     # Action
         )
 
     return connexion_id
@@ -359,6 +377,12 @@ async def getAllUserConnexionsRepo(user_id : str):
                 "messages": 1,
                 "user_id": 1,
                 "guest_id": 1,
+                "guest_last_date": 1,
+                "user_last_date": 1,
+                "guest_is_connect": 1,
+                "guest_unread_message": 1,
+                "user_is_conntect": 1,
+                "user_unread_message": 1,
                 "user_info.user_id": 1,
                 "user_info.name": 1,
                 "user_info.age": 1,

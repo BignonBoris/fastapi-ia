@@ -9,8 +9,11 @@ async def getUsersRepo():
 
 async def getUserRepo(searchValue : str , searchKey : str = "user_id"):
     user = await DB.users.find_one({searchKey : searchValue}, {"_id": 0}) 
-    user["email"] = "" if user.get("email") == user.get("user_id") else user.get("email")
-    return user
+    if user:
+        user["email"] = "" if user.get("email") == user.get("user_id") else user.get("email")
+        return user
+    else :
+        return None
 
 
 async def createUserRepo(data : UserInput): 

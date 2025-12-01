@@ -1,14 +1,14 @@
 from fastapi import APIRouter, File, UploadFile
 from models.models import ConnexionInput, ConnexionMessageInput
 from repositories.matching import createConnexionRepo ,  updateConnexionRepo
+from repositories.connexion import connexionLoginRepo ,  connexionLogOutRepo
+from config import API_URL
 import shutil
 import uuid
 import os
 
 connexion_router = APIRouter(prefix="/connexion",tags=["Connexion"] )  
 
-baseUrl = "https://fastapi-ia-74eo.onrender.com"
-# baseUrl = "http://127.0.0.1:8000"
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)  
@@ -18,14 +18,21 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def scanner(input: ConnexionInput):
     return await createConnexionRepo("scanner", input.user_id, input.guest_id)
 
+    
+@connexion_router.get("/login/{connexion_id}/{id}")
+async def connexion_login(connexion_id : str, id : str):
+    update_id = await connexionLoginRepo(connexion_id, id)
+    return update_id
+
+@connexion_router.get("/logout/{connexion_id}/{id}")
+async def connexion_logout(connexion_id : str, id : str):
+    update_id = await connexionLogOutRepo(connexion_id, id)
+    return update_id
+
 
 @connexion_router.post("/message/upload-image/{connexion_id}")
 async def upload_image(connexion_id: str,  user_id : str, file : UploadFile = File()):
     # Crée un nom de fichier unique
-
-    print(connexion_id)
-    print(user_id)
-    print(file)
 
     file_extension = os.path.splitext(file.filename)[1]
     filename = f"{uuid.uuid4()}{file_extension}"
@@ -36,7 +43,7 @@ async def upload_image(connexion_id: str,  user_id : str, file : UploadFile = Fi
         shutil.copyfileobj(file.file, buffer)
 
         
-    public_url = f"{baseUrl}/uploads/{filename}"
+    public_url = f"{API_URL}uploads/{filename}"
 
     image_url = f"/{file_path}"  # ou une URL Cloud
     
@@ -44,7 +51,7 @@ async def upload_image(connexion_id: str,  user_id : str, file : UploadFile = Fi
     
     # update_id = await updateUserRepo(user_id, UserInput(profileImagePath = public_url))
 
-    return {"path" : image_url, "url" : public_url, "update_id" : update_id}
+    return {"path" : image_url, "public_url" : public_url, "update_id" : update_id}
 
     return JSONResponse({
         "message": "Image uploaded successfully",

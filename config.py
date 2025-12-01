@@ -25,3 +25,4 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 MONGO_URI = os.getenv("MONGO_URI")
 
 DB = AsyncIOMotorClient(MONGO_URI).sample_mflix  # Nom de ta base
+API_URL = os.getenv("API_URL")
