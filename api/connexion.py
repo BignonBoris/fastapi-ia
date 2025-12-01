@@ -10,7 +10,7 @@ import os
 connexion_router = APIRouter(prefix="/connexion",tags=["Connexion"] )  
 
 
-UPLOAD_DIR = API_URL+"uploads"
+UPLOAD_DIR = f"{API_URL}uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)  
 
 
