@@ -50,6 +50,8 @@ async def upload_image(connexion_id: str,  user_id : str, file : UploadFile = Fi
     update_id = await updateConnexionRepo(connexion_id, ConnexionMessageInput(user_id = user_id, message = public_url, type = "IMAGE"))
     
     # update_id = await updateUserRepo(user_id, UserInput(profileImagePath = public_url))
+    
+    print(f"update_id = {update_id} , public_url = {public_url} , image_url = {image_url}")
 
     return {"path" : image_url, "public_url" : public_url, "update_id" : update_id}
 
